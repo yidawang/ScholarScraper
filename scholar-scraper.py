@@ -7,7 +7,7 @@ import re
 import os
 
 # Default URL
-DEFAULT_URL = "a google scholar profile page url"
+DEFAULT_URL = "a google scholar profile page url" #FIXME
 
 def calculate_metrics(citations_list):
     """
@@ -144,8 +144,8 @@ def send_metrics_email(recipient_email, total_papers, total_citations, h_index, 
     from datetime import datetime
     
     # Email settings - replace with your details
-    sender_email = "xxx@gmail.com"  # Replace with your Gmail
-    sender_password = "abcd efgh ijkl mnop"   # Replace with your app password
+    sender_email = "xxx@gmail.com"  # Replace with your Gmail FIXME
+    sender_password = "abcd efgh ijkl mnop"   # Replace with your app password FIXME
     
     # Create message
     msg = MIMEMultipart()
@@ -257,7 +257,7 @@ def main():
         print(f"i10-index: {i10_index}")
         
         # Send email summary
-        recipient_email = "xxx@gmail.com"
+        recipient_email = "xxx@gmail.com"   #FIXME
         if recipient_email:
             send_metrics_email(
                 recipient_email=recipient_email,
