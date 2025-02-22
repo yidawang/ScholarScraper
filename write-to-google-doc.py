@@ -77,6 +77,18 @@ def create_or_update_sheets(service, spreadsheet_id, sheet_names):
         print(f"Error updating sheet structure: {str(e)}")
         raise
 
+def clean_data_for_sheets(df):
+    """Clean DataFrame to ensure it's compatible with Google Sheets"""
+    # First fill NaN values with empty strings
+    df = df.fillna('')
+    
+    # Convert to list format
+    data = [df.columns.values.tolist()] + df.values.tolist()
+    
+    # Additional cleaning to ensure all values are strings and handle any edge cases
+    return [['' if pd.isna(cell) else str(cell) for cell in row] for row in data]
+
+
 def update_google_sheet(spreadsheet_id, excel_file):
     """
     Update Google Spreadsheet with all sheets from Excel file
@@ -100,7 +112,7 @@ def update_google_sheet(spreadsheet_id, excel_file):
             df = pd.read_excel(excel_file, sheet_name=sheet_name)
             
             # Convert DataFrame to list for Google Sheets
-            data = [df.columns.values.tolist()] + df.values.tolist()
+            data = clean_data_for_sheets(df)
             
             # Clear existing data
             range_name = f"'{sheet_name}'!A1:ZZ"

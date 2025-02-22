@@ -103,9 +103,17 @@ def scrape_scholar_profile(url):
         print(f"Error: {str(e)}")
         return None, None
 
+def normalize_title(title):
+    """
+    Normalize paper title by removing extra whitespace and converting to lowercase
+    """
+    if pd.isna(title):
+        return title
+    return ' '.join(str(title).lower().split())
+
 def merge_citation_data(existing_df, new_citations, current_date):
     """
-    Merge existing citation data with new citations
+    Merge existing citation data with new citations using case-insensitive title matching
     """
     citation_col = f'citations_{current_date}'
     
@@ -113,18 +121,38 @@ def merge_citation_data(existing_df, new_citations, current_date):
         # First run - create new DataFrame
         df = pd.DataFrame.from_dict(new_citations, orient='index', columns=[citation_col])
         df.index.name = 'Title'
+        # Store original titles as a column
+        df['Original_Title'] = df.index
+        # Create normalized index
+        df.index = df.index.map(normalize_title)
     else:
         # Add new column to existing data, excluding metric rows
         df = existing_df.copy()
         metric_rows = df.index.isin(['Total Citations', 'h-index', 'i10-index'])
         df = df[~metric_rows]  # Remove metric rows before merging
         
+        # If Original_Title column doesn't exist in existing data, create it
+        if 'Original_Title' not in df.columns:
+            df['Original_Title'] = df.index
+            df.index = df.index.map(normalize_title)
+        
+        # Create new DataFrame with normalized titles as index
         new_df = pd.DataFrame.from_dict(new_citations, orient='index', columns=[citation_col])
         new_df.index.name = 'Title'
+        # Store original titles temporarily with a different name
+        new_df['New_Original_Title'] = new_df.index
+        new_df.index = new_df.index.map(normalize_title)
         
         # Merge existing and new data
-        df = df.join(new_df, how='outer')
+        df = df.join(new_df[[citation_col, 'New_Original_Title']], how='outer')
         
+        # Update Original_Title for any new entries
+        mask = df['Original_Title'].isna()
+        df.loc[mask, 'Original_Title'] = df.loc[mask, 'New_Original_Title']
+        
+        # Drop the temporary column
+        df = df.drop('New_Original_Title', axis=1)
+    
     return df
 
 def send_metrics_email(recipient_email, total_papers, total_citations, h_index, i10_index, author_name):
@@ -243,6 +271,10 @@ def main():
         
         # Sort papers columns chronologically
         papers_df = papers_df.reindex(sorted(papers_df.columns), axis=1)
+
+        # Reset index to Original_Title before saving
+        papers_df.index = papers_df['Original_Title']
+        papers_df = papers_df.drop('Original_Title', axis=1)
         
         # Save both sheets to Excel
         with pd.ExcelWriter(output_filename, engine='openpyxl') as writer:
