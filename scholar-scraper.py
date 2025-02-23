@@ -7,7 +7,8 @@ import re
 import os
 
 # Default URL
-DEFAULT_URL = "a google scholar profile page url" #FIXME
+#DEFAULT_URL = "a google scholar profile page url" #FIXME
+DEFAULT_URL = "https://scholar.google.com/citations?user=NvBZp6MAAAAJ&hl=en"
 
 def calculate_metrics(citations_list):
     """
@@ -126,10 +127,8 @@ def merge_citation_data(existing_df, new_citations, current_date):
         # Create normalized index
         df.index = df.index.map(normalize_title)
     else:
-        # Add new column to existing data, excluding metric rows
+        # Add new column to existing data
         df = existing_df.copy()
-        metric_rows = df.index.isin(['Total Citations', 'h-index', 'i10-index'])
-        df = df[~metric_rows]  # Remove metric rows before merging
         
         # If Original_Title column doesn't exist in existing data, create it
         if 'Original_Title' not in df.columns:
@@ -275,6 +274,7 @@ def main():
         # Reset index to Original_Title before saving
         papers_df.index = papers_df['Original_Title']
         papers_df = papers_df.drop('Original_Title', axis=1)
+        papers_df.index.name = 'Title' # Ensure the index name is 'Title'
         
         # Save both sheets to Excel
         with pd.ExcelWriter(output_filename, engine='openpyxl') as writer:
