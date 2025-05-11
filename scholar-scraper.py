@@ -7,8 +7,18 @@ import re
 import os
 
 # Default URL
-#DEFAULT_URL = "a google scholar profile page url" #FIXME
-DEFAULT_URL = "https://scholar.google.com/citations?user=NvBZp6MAAAAJ&hl=en"
+DEFAULT_URL = "a google scholar profile page url" #FIXME
+
+def human_like_delay():
+    """Add a more human-like delay between requests"""
+    # More natural typing/reading pattern - sometimes quick, sometimes taking a break
+    base_delay = random.uniform(5, 10)  # Base delay between 5-10 seconds
+    
+    # Occasionally add a longer "coffee break" delay
+    if random.random() < 0.1:  # 10% chance of a longer delay
+        base_delay += random.uniform(20, 40)
+        
+    return base_delay
 
 def calculate_metrics(citations_list):
     """
@@ -69,7 +79,15 @@ def scrape_scholar_profile(url):
         print(f"Extracted user ID: {user_id}")
         
         print("Searching for author profile...")
+
+        # Add some initial delay before starting
+        time.sleep(human_like_delay())
+
         search_query = scholarly.search_author_id(user_id)
+
+        # Add a delay after searching for the author
+        time.sleep(human_like_delay())
+
         author = scholarly.fill(search_query)
         
         if not author:
@@ -82,8 +100,24 @@ def scrape_scholar_profile(url):
         paper_dict = {}
         
         print("\nRetrieving publications...")
+
+        # Limit papers per session to avoid detection
+        max_papers_per_session = random.randint(15, 25)
+        papers_this_session = 0
+        
         for idx, pub in enumerate(author['publications'], 1):
             try:
+                # Check if we need to take a longer break
+                if papers_this_session >= max_papers_per_session:
+                    long_break = random.uniform(60, 120)  # 1-2 minute break
+                    print(f"Taking a short break... resuming in about {int(long_break)} seconds")
+                    time.sleep(long_break)
+                    papers_this_session = 0
+                
+                # Human-like delay between papers
+                delay = human_like_delay()
+                time.sleep(delay)
+
                 pub_filled = scholarly.fill(pub)
                 citations = pub_filled.get('num_citations', 0)
                 paper_name = pub_filled['bib'].get('title', '').strip()
@@ -91,11 +125,12 @@ def scrape_scholar_profile(url):
                 if paper_name:
                     paper_dict[paper_name] = citations
                     print(f"Processed paper {idx}: {paper_name[:50]}...")
-                
-                time.sleep(random.uniform(2, 5))
+                    papers_this_session += 1
                 
             except Exception as e:
                 print(f"Error processing publication: {str(e)}")
+                # Add an extra delay if there's an error
+                time.sleep(random.uniform(10, 20))
                 continue
         
         return paper_dict, author_name
@@ -223,6 +258,11 @@ def main():
     
     print("\nStarting search...")
     print(f"Using URL: {url}")
+
+    # Add initial randomized delay to simulate human starting the browser
+    initial_delay = random.uniform(3, 8)
+    print(f"Initializing session...")
+    time.sleep(initial_delay)
     
     # Get new citation data
     paper_dict, author_name = scrape_scholar_profile(url)
